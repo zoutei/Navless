@@ -30,3 +30,17 @@ separately before those variants are selected.
 An additional shallow clone of the published GitHub branch into a new directory
 containing spaces passed source doctor and installer dry-run. It did not use
 workspace-only files.
+
+## Height follow-up remote clean checkout
+
+Verified the actual published follow-up head `ffb3949` using a fresh depth-one
+network clone into a path containing spaces (no local workspace copy):
+source doctor verified all 38 runtime members; `setup_jetson.sh --dry-run`
+performed no Docker/SSH operation; install and height suites passed 6 tests;
+runtime suite passed 21 with one optional retained-ULog/pyulog skip; transport
+framing passed 4 tests. `preview/smoke.py` passed synthetic SQLite → H.264
+MP4/poster/manifest, catalog classification, HTTP/UI, byte ranges and symlink
+exclusion. No simulator, PX4, Jetson, hardware or dependency build was run.
+This is clean-source/test/preview verification, not a fresh full-stack build
+or flight qualification. First moving attempt failed early yaw integrity;
+sill/window behavior remains unqualified and the next flight result pending.
