@@ -14,7 +14,12 @@ for spec in 'R 127.0.0.1:17447:127.0.0.1:17447' \
             'L 127.0.0.1:18082:127.0.0.1:18082'; do
   read -r direction address <<< "$spec"
   "${SSH[@]}" -O forward -o ExitOnForwardFailure=yes "-$direction" "$address" "$TARGET" \
-    || echo "Forward $address may already exist; verify the viewer below."
+    || {
+      if [[ -n "${SPLIT_VERIFIED_TRANSPORT:-}" ]]; then
+        echo "Private session could not acquire forward $address" >&2; exit 1
+      fi
+      echo "Forward $address may already exist; verify the viewer below."
+    }
 done
 if [[ "$MODE" == auto ]] && "${SSH[@]}" "$TARGET" 'docker inspect drone19-gazebo-bench >/dev/null 2>&1'; then
   "${SSH[@]}" "$TARGET" '

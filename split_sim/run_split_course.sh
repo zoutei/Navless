@@ -17,7 +17,10 @@ case "$yaw_policy" in first-exterior|window-forward) ;; *) echo "unreviewed spli
 # Kernel-owned lock is released on exit, including interruption.
 if [[ "${SPLIT_FLIGHT_LOCK_HELD:-}" != 1 ]]; then
   exec python3 -c 'import fcntl,os,sys
-lock=os.open("/tmp/drone19-domain219-flight.lock",os.O_CREAT|os.O_RDWR,0o600)
+path="/tmp/drone19-domain219-flight.lock"
+inherited=os.environ.get("SPLIT_TRANSPORT_LOCK_FD")
+lock=int(inherited) if inherited else os.open(path,os.O_CREAT|os.O_RDWR,0o600)
+if not os.path.samestat(os.fstat(lock),os.stat(path)): raise SystemExit("incorrect flight lease")
 try: fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
 except BlockingIOError: raise SystemExit("another split flight launcher is active")
 os.set_inheritable(lock,True)
@@ -28,6 +31,9 @@ source ./split_network.sh
 split_ensure_ssh
 SSH=("${SSH[@]}" -o BatchMode=yes "$TARGET")
 mkdir -p ../local_course/state/nvidia-runs
+if [[ -z "${SPLIT_VERIFIED_TRANSPORT:-}" && -z "${SPLIT_REMOTE_LEASE_HELD:-}" ]]; then
+  exec python3 "$PWD/with_transport.py" --legacy-flight "$SOCKET" "${TARGET:-dronehacks@skybeta-19.local}" "$0" "$@"
+fi
 container=drone19-split-sim-laptop-1
 [[ "$(docker inspect -f '{{.State.Running}}' "$container")" == true ]]
 [[ "$(docker exec "$container" printenv ROS_DOMAIN_ID)" == 219 ]]
@@ -44,6 +50,10 @@ if [[ -n "$baseline" && ! -d "$baseline" ]]; then
 fi
 mkdir "$run"
 mkdir "$run/flight"
+if [[ -n "${SPLIT_VERIFIED_TRANSPORT:-}" ]]; then
+  python3 "${SPLIT_TRANSPORT_TOOL:?}" --check-px4
+  cp "${SPLIT_TRANSPORT_RECEIPT:?}" "$run/transport.json"
+fi
 run_name="${SPLIT_RUN_NAME:-Team A-star course with $yaw_policy camera yaw}"
 comparison=("$run" --name "$run_name")
 if [[ -n "$baseline" ]]; then comparison+=(--baseline "$baseline"); fi

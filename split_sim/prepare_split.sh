@@ -12,6 +12,12 @@ approve_prepared() {
   source ./split_network.sh
   socket="$SOCKET"
   ssh -S "$socket" -o BatchMode=yes "$TARGET" "docker exec drone19-split-sim pgrep -f '^python3 .*mission.py --prepare-flight .*--run-id $id( |$)'" >/dev/null || return 1
+  if [[ -s "$run/transport.json" ]]; then
+    [[ -n "${SPLIT_TRANSPORT_TOOL:-}" ]] || return 1
+    cmp "$run/transport.json" "${SPLIT_TRANSPORT_RECEIPT:?}" || return 1
+    python3 "$SPLIT_TRANSPORT_TOOL" --check-active >/dev/null || return 1
+    python3 "$SPLIT_TRANSPORT_TOOL" --check-px4 || return 1
+  fi
   manifest="$(shasum -a256 "$run/sources.sha256" | awk '{print $1}')"
   printf '%s %s\n' "$id" "$manifest" > "$run/.prepared-approval.tmp" && mv "$run/.prepared-approval.tmp" "$run/prepared-approval"
   echo "Approved prepared run $id; live observation, sensor qualification and recording gates remain active."

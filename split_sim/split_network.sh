@@ -35,6 +35,10 @@ split_ensure_ssh() {
 
 split_select_xrce_ip() {
   local candidate connection
+  if [[ -n "${SPLIT_VERIFIED_TRANSPORT:-}" ]]; then
+    python3 "${SPLIT_TRANSPORT_TOOL:?}" --check-active
+    return
+  fi
   if [[ -n "${JETSON_IP:-}" ]]; then
     candidate="$JETSON_IP"
   else

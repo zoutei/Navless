@@ -8,6 +8,9 @@ if ! docker compose exec -T laptop pgrep -f '^gz sim -s' >/dev/null; then
   exit 2
 fi
 if docker compose exec -T laptop pgrep -x px4 >/dev/null; then
+  if [[ -n "${SPLIT_VERIFIED_TRANSPORT:-}" ]]; then
+    python3 "${SPLIT_TRANSPORT_TOOL:?}" --check-px4
+  fi
   echo 'PX4 SITL already runs in the laptop simulation container.'
   exit 0
 fi
